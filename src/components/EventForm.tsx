@@ -72,7 +72,6 @@ export const EventForm: React.FC<EventFormProps> = ({ onSubmit, onClose, initial
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Sección 1: Información Básica */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-700">Información Básica</h3>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700">
