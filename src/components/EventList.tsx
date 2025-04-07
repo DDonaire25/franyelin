@@ -9,6 +9,8 @@ interface EventListProps {
   onDelete: (id: string) => void;
   filters: EventFilters;
   onFilterChange: (filters: EventFilters) => void;
+  onToggleReminder: (id: string, minutesBefore: number) => void;
+  onToggleFavorite: (id: string) => void;
 }
 
 export const EventList: React.FC<EventListProps> = ({
@@ -17,6 +19,8 @@ export const EventList: React.FC<EventListProps> = ({
   onDelete,
   filters,
   onFilterChange,
+  onToggleReminder,
+  onToggleFavorite,
 }) => {
   return (
     <div className="space-y-6">
@@ -77,6 +81,8 @@ export const EventList: React.FC<EventListProps> = ({
             event={event}
             onEdit={onEdit}
             onDelete={onDelete}
+            onToggleReminder={onToggleReminder}
+            onToggleFavorite={onToggleFavorite}
           />
         ))}
         {events.length === 0 && (

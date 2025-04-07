@@ -1,63 +1,38 @@
 import React, { useState } from 'react';
 import { EventFormData } from '../types';
-import { Calendar, MapPin, Users, Edit, Trash2, Share2, Download, Copy, QrCode } from 'lucide-react';
+import { Calendar, MapPin, Users, Edit, Trash2, Share2, Download, Copy, Bell, Star } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { FacebookShareButton, TwitterShareButton, WhatsappShareButton } from 'react-share';
-import QRCode from 'react-qr-code';
 import toast from 'react-hot-toast';
+import { generateShareMessage } from '../utils/shareFormatters';
 
 interface EventCardProps {
   event: EventFormData;
   onEdit: (event: EventFormData) => void;
   onDelete: (id: string) => void;
+  onToggleReminder: (id: string, minutesBefore: number) => void;
+  onToggleFavorite: (id: string) => void;
 }
 
-export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onDelete }) => {
+export const EventCard: React.FC<EventCardProps> = ({
+  event,
+  onEdit,
+  onDelete,
+  onToggleReminder,
+  onToggleFavorite,
+}) => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const eventUrl = `${window.location.origin}/event/${event.id}`;
-  
-  const generateShareMessage = () => {
-    return `📢 ${event.title}\n` +
-           `📅 ${new Date(event.datetime).toLocaleDateString()} | 🕒 ${new Date(event.datetime).toLocaleTimeString()}\n` +
-           `📍 ${event.location}\n` +
-           `🔗 ${eventUrl}\n` +
-           `#CulturaViva #Eventos`;
-  };
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: event.title,
-          text: generateShareMessage(),
-          url: eventUrl,
-        });
-      } catch (err) {
-        console.error('Error sharing:', err);
-        setIsShareModalOpen(true);
-      }
-    } else {
-      setIsShareModalOpen(true);
-    }
-  };
+  const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
+  const [reminderMinutes, setReminderMinutes] = useState(30);
 
   const handleCopyText = async () => {
     try {
-      await navigator.clipboard.writeText(generateShareMessage());
+      const message = generateShareMessage(event);
+      await navigator.clipboard.writeText(message);
       toast.success('Texto copiado al portapapeles');
     } catch (err) {
       console.error('Error copying text:', err);
       toast.error('Error al copiar el texto');
-    }
-  };
-
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(eventUrl);
-      toast.success('Enlace copiado al portapapeles');
-    } catch (err) {
-      console.error('Error copying link:', err);
-      toast.error('Error al copiar el enlace');
     }
   };
 
@@ -78,134 +53,231 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onDelete })
     }
   };
 
+  const handleSetReminder = () => {
+    if (reminderMinutes > 0) {
+      onToggleReminder(event.id, reminderMinutes);
+      setIsReminderModalOpen(false);
+      toast.success('Recordatorio configurado exitosamente');
+    } else {
+      toast.error('Por favor seleccione un tiempo válido para el recordatorio');
+    }
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: 'Agenda Cultural',
+      text: generateShareMessage(event),
+      url: window.location.href
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        toast.success('Evento compartido exitosamente');
+      } catch (err) {
+        console.error('Error sharing:', err);
+        setIsShareModalOpen(true);
+      }
+    } else {
+      setIsShareModalOpen(true);
+    }
+  };
+
   return (
     <>
-      <div id={`event-card-${event.id}`} className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div id={`event-card-${event.id}`} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         {event.image && (
           <img src={event.image} alt={event.title} className="w-full h-48 object-cover" />
         )}
         <div className="p-6">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <span className="inline-block px-3 py-1 text-sm font-semibold text-purple-600 bg-purple-100 rounded-full">
+              <span className="inline-block px-3 py-1 text-sm font-semibold text-purple-600 bg-purple-100 dark:bg-purple-900 dark:text-purple-200 rounded-full">
                 {event.category}
               </span>
-              <h3 className="mt-2 text-xl font-bold text-gray-900">{event.title}</h3>
+              <h3 className="mt-2 text-xl font-bold text-gray-900 dark:text-white">{event.title}</h3>
             </div>
             <div className="flex space-x-2">
               <button
-                onClick={() => onEdit(event)}
-                className="p-2 text-gray-600 hover:text-purple-600 transition-colors"
+                onClick={() => onToggleFavorite(event.id)}
+                className={`p-2 rounded-full transition-colors ${
+                  event.isFavorite 
+                    ? 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' 
+                    : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
+                }`}
+                aria-label={event.isFavorite ? 'Eliminar de favoritos' : 'Añadir a favoritos'}
               >
-                <Edit size={20} />
+                <Star
+                  size={20}
+                  fill={event.isFavorite ? 'currentColor' : 'none'}
+                  className="transition-transform hover:scale-110"
+                />
+              </button>
+              <button
+                onClick={() => setIsReminderModalOpen(true)}
+                className={`p-2 rounded-full transition-colors ${
+                  event.reminder?.enabled 
+                    ? 'text-purple-500 bg-purple-50 dark:bg-purple-900/20' 
+                    : 'text-gray-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20'
+                }`}
+                aria-label="Configurar recordatorio"
+              >
+                <Bell
+                  size={20}
+                  fill={event.reminder?.enabled ? 'currentColor' : 'none'}
+                  className="transition-transform hover:scale-110"
+                />
+              </button>
+              <button
+                onClick={() => onEdit(event)}
+                className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                aria-label="Editar evento"
+              >
+                <Edit size={20} className="transition-transform hover:scale-110" />
               </button>
               <button
                 onClick={handleShare}
-                className="p-2 text-gray-600 hover:text-purple-600 transition-colors"
+                className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                aria-label="Compartir evento"
               >
-                <Share2 size={20} />
+                <Share2 size={20} className="transition-transform hover:scale-110" />
               </button>
               <button
                 onClick={() => onDelete(event.id)}
-                className="p-2 text-gray-600 hover:text-red-600 transition-colors"
+                className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                aria-label="Eliminar evento"
               >
-                <Trash2 size={20} />
+                <Trash2 size={20} className="transition-transform hover:scale-110" />
               </button>
             </div>
           </div>
 
-          <p className="text-gray-600 mb-4">{event.description}</p>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">{event.description}</p>
 
           <div className="space-y-2">
-            <div className="flex items-center text-gray-600">
+            <div className="flex items-center text-gray-600 dark:text-gray-300">
               <Calendar className="h-5 w-5 mr-2" />
-              <span>{new Date(event.datetime).toLocaleString()}</span>
+              <span>{new Date(event.datetime).toLocaleString('es-ES')}</span>
             </div>
-            <div className="flex items-center text-gray-600">
+            <div className="flex items-center text-gray-600 dark:text-gray-300">
               <MapPin className="h-5 w-5 mr-2" />
               <span>{event.location}</span>
             </div>
-            <div className="flex items-center text-gray-600">
+            <div className="flex items-center text-gray-600 dark:text-gray-300">
               <Users className="h-5 w-5 mr-2" />
               <span>{event.targetAudience}</span>
             </div>
           </div>
 
           <div className="mt-4 flex justify-between items-center">
-            <span className="text-purple-600 font-semibold">
+            <span className="text-purple-600 dark:text-purple-400 font-semibold">
               {event.cost.isFree ? 'Gratis' : `$${event.cost.amount}`}
             </span>
           </div>
         </div>
       </div>
 
+      {/* Share Modal */}
       {isShareModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg w-full max-w-md">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
             <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Compartir Evento</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Compartir Evento</h3>
               
               <div className="space-y-4">
-                {/* QR Code */}
-                <div className="flex justify-center mb-4">
-                  <QRCode value={eventUrl} size={150} />
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                    {generateShareMessage(event)}
+                  </p>
                 </div>
 
-                {/* Share Buttons */}
                 <div className="flex justify-center space-x-4 mb-4">
-                  <WhatsappShareButton url={eventUrl} title={generateShareMessage()}>
-                    <div className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600">
+                  <WhatsappShareButton url={window.location.href} title={generateShareMessage(event)}>
+                    <div className="p-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors">
                       <Share2 size={24} />
                     </div>
                   </WhatsappShareButton>
                   
-                  <FacebookShareButton url={eventUrl} quote={generateShareMessage()}>
-                    <div className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700">
+                  <FacebookShareButton url={window.location.href} quote={generateShareMessage(event)}>
+                    <div className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors">
                       <Share2 size={24} />
                     </div>
                   </FacebookShareButton>
                   
-                  <TwitterShareButton url={eventUrl} title={generateShareMessage()}>
-                    <div className="p-2 bg-blue-400 text-white rounded-full hover:bg-blue-500">
+                  <TwitterShareButton url={window.location.href} title={generateShareMessage(event)}>
+                    <div className="p-3 bg-blue-400 text-white rounded-full hover:bg-blue-500 transition-colors">
                       <Share2 size={24} />
                     </div>
                   </TwitterShareButton>
                 </div>
 
-                {/* Copy Link Button */}
-                <button
-                  onClick={handleCopyLink}
-                  className="w-full flex items-center justify-center space-x-2 p-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  <Copy size={20} />
-                  <span>Copiar Enlace</span>
-                </button>
-
-                {/* Copy Text Button */}
                 <button
                   onClick={handleCopyText}
-                  className="w-full flex items-center justify-center space-x-2 p-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                  className="w-full flex items-center justify-center space-x-2 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   <Copy size={20} />
                   <span>Copiar Texto</span>
                 </button>
 
-                {/* Download Image Button */}
                 <button
                   onClick={handleDownloadImage}
-                  className="w-full flex items-center justify-center space-x-2 p-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                  className="w-full flex items-center justify-center space-x-2 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   <Download size={20} />
                   <span>Descargar Imagen</span>
                 </button>
 
-                {/* Close Button */}
                 <button
                   onClick={() => setIsShareModalOpen(false)}
-                  className="w-full mt-4 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                  className="w-full mt-4 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
                   Cerrar
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reminder Modal */}
+      {isReminderModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Configurar Recordatorio</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Minutos antes del evento
+                  </label>
+                  <select
+                    value={reminderMinutes}
+                    onChange={(e) => setReminderMinutes(Number(e.target.value))}
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value={15}>15 minutos</option>
+                    <option value={30}>30 minutos</option>
+                    <option value={60}>1 hora</option>
+                    <option value={120}>2 horas</option>
+                    <option value={1440}>1 día</option>
+                  </select>
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setIsReminderModalOpen(false)}
+                    className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSetReminder}
+                    className="flex-1 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Guardar
+                  </button>
+                </div>
               </div>
             </div>
           </div>

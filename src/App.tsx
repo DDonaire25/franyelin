@@ -1,21 +1,99 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Calendar, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Calendar, Moon, Sun } from 'lucide-react';
 import { EventForm } from './components/EventForm';
 import { EventList } from './components/EventList';
 import { EventDetails } from './components/EventDetails';
+import { Navbar } from './components/Navbar';
+import { ProfileEditor } from './components/ProfileEditor';
+import { FavoritesSection } from './components/FavoritesSection';
+import { Footer } from './components/Footer';
 import { useEvents } from './hooks/useEvents';
-import { EventFormData } from './types';
+import { EventFormData, ActiveSection } from './types';
 import { Toaster } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const MainContent = () => {
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
+  const {
+    events,
+    addEvent,
+    updateEvent,
+    deleteEvent,
+    toggleReminder,
+    toggleFavorite,
+    filters,
+    setFilters
+  } = useEvents();
+
+  return (
+    <>
+      <main className="pt-20 pb-16">
+        <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <EventList
+                  events={events}
+                  onEdit={() => {}}
+                  onDelete={deleteEvent}
+                  filters={filters}
+                  onFilterChange={setFilters}
+                  onToggleReminder={toggleReminder}
+                  onToggleFavorite={toggleFavorite}
+                />
+              }
+            />
+            <Route
+              path="/event/:id"
+              element={
+                <EventDetails
+                  events={events}
+                  onEdit={() => {}}
+                  onDelete={deleteEvent}
+                  onToggleReminder={toggleReminder}
+                  onToggleFavorite={toggleFavorite}
+                />
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+      </main>
+      {isHomePage && <Footer />}
+    </>
+  );
+};
 
 function App() {
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<ActiveSection>(null);
   const [editingEvent, setEditingEvent] = useState<EventFormData | undefined>();
-  const { events, addEvent, updateEvent, deleteEvent, filters, setFilters } = useEvents();
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
+  
+  const {
+    events,
+    addEvent,
+    updateEvent,
+    deleteEvent,
+    toggleReminder,
+    toggleFavorite,
+    filters,
+    setFilters
+  } = useEvents();
+  
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+    document.documentElement.classList.toggle('dark', isDarkMode);
+  }, [isDarkMode]);
 
   const handleEdit = (event: EventFormData) => {
     setEditingEvent(event);
-    setIsFormOpen(true);
+    setActiveSection('create');
   };
 
   const handleSubmit = (eventData: Omit<EventFormData, 'id'>) => {
@@ -24,62 +102,118 @@ function App() {
     } else {
       addEvent(eventData);
     }
+    setActiveSection(null);
   };
 
   const handleCloseForm = () => {
-    setIsFormOpen(false);
+    setActiveSection(null);
     setEditingEvent(undefined);
   };
 
-  return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Toaster position="top-right" />
-        
-        {/* Header */}
-        <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-8 w-8 text-purple-600" />
-              <h1 className="text-2xl font-bold text-gray-900">Agenda Cultural</h1>
-            </div>
-            <button
-              onClick={() => setIsFormOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Nuevo Evento
-            </button>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-          <Routes>
-            <Route path="/" element={
+  const renderActiveSection = () => {
+    switch (activeSection) {
+      case 'search':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed inset-0 top-0 pt-20 pb-16 bg-gray-50 dark:bg-gray-900 overflow-y-auto z-40"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <EventList
                 events={events}
                 onEdit={handleEdit}
                 onDelete={deleteEvent}
                 filters={filters}
                 onFilterChange={setFilters}
+                onToggleReminder={toggleReminder}
+                onToggleFavorite={toggleFavorite}
               />
-            } />
-            <Route path="/event/:id" element={
-              <EventDetails events={events} onEdit={handleEdit} onDelete={deleteEvent} />
-            } />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-
-        {/* Modal Form */}
-        {isFormOpen && (
+            </div>
+          </motion.div>
+        );
+      case 'create':
+        return (
           <EventForm
             onSubmit={handleSubmit}
             onClose={handleCloseForm}
             initialData={editingEvent}
           />
-        )}
+        );
+      case 'favorites':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed inset-0 top-0 pt-20 pb-16 bg-gray-50 dark:bg-gray-900 overflow-y-auto z-40"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <FavoritesSection
+                events={events.filter(e => e.isFavorite)}
+                onEdit={handleEdit}
+                onDelete={deleteEvent}
+                onToggleReminder={toggleReminder}
+                onToggleFavorite={toggleFavorite}
+              />
+            </div>
+          </motion.div>
+        );
+      case 'profile':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed inset-0 top-0 pt-20 pb-16 bg-gray-50 dark:bg-gray-900 overflow-y-auto z-40"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <ProfileEditor />
+            </div>
+          </motion.div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Router>
+      <div className={`min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 ${isDarkMode ? 'dark' : ''}`}>
+        <Toaster position="top-right" />
+        
+        {/* Header */}
+        <header className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-sm z-50">
+          <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Calendar className="h-8 w-8 text-purple-600" />
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Agenda Cultural</h1>
+              </div>
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                {isDarkMode ? (
+                  <Sun className="h-6 w-6 text-yellow-500" />
+                ) : (
+                  <Moon className="h-6 w-6 text-gray-600" />
+                )}
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <MainContent />
+
+        {/* Active Section */}
+        <AnimatePresence>
+          {activeSection && renderActiveSection()}
+        </AnimatePresence>
+
+        {/* Bottom Navigation */}
+        <Navbar activeSection={activeSection} onSectionChange={setActiveSection} />
       </div>
     </Router>
   );
