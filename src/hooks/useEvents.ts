@@ -16,77 +16,29 @@ const generateRecurringEvents = (baseEvent: EventFormData): EventFormData[] => {
   const MAX_EVENTS = 100;
 
   switch (baseEvent.recurrence.type) {
-    case 'diaria': { // <-- Añadir llave de apertura
-      for (let i = 0; i < 30 && events.length < MAX_EVENTS; i++) {
-        // ... lógica diaria
-      }
+    case 'diaria': {
+      // ... lógica diaria
       break;
-    } // <-- Añadir llave de cierre
+    }
 
-    case 'anual': { // <-- Añadir llave de apertura
-      for (let i = 0; i < 5 && events.length < MAX_EVENTS; i++) {
-        // ... lógica anual
-      }
+    case 'anual': {
+      // ... lógica anual
       break;
-    } // <-- Añadir llave de cierre
+    }
 
-    case 'personalizada': { // <-- Añadir llave de apertura
+    case 'personalizada': {
       // ... lógica personalizada
       break;
-    } // <-- Añadir llave de cierre
-
-    default: { // <-- Añadir llave de apertura
-      if (baseDate > now) {
-        events.push({
-          ...baseEvent,
-          id: crypto.randomUUID(),
-        });
-      }
-      break;
-    } // <-- Añadir llave de cierre
-  }
-
-  return events;
-};
-      const endDate = baseEvent.recurrence.endDate 
-        ? new Date(baseEvent.recurrence.endDate)
-        : new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000)); // Default to 1 year
-
-      const maxOccurrences = baseEvent.recurrence.occurrences || MAX_EVENTS;
-      const daysOfWeek = baseEvent.recurrence.daysOfWeek || [];
-      
-      let currentDate = new Date(baseDate);
-      
-      while (events.length < maxOccurrences && currentDate <= endDate && events.length < MAX_EVENTS) {
-        const dayName = currentDate.toLocaleDateString('es-ES', { weekday: 'long' });
-        const capitalizedDayName = dayName.charAt(0).toUpperCase() + dayName.slice(1);
-
-        if (daysOfWeek.includes(capitalizedDayName) && currentDate > now) {
-          events.push({
-            ...baseEvent,
-            id: crypto.randomUUID(),
-            datetime: currentDate.toISOString(),
-          });
-        }
-
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-      break;
-      } // <-- Este es el cierre correcto del switch
-
-  return events; // Línea 75 (ajustada)
-};
+    }
 
     default: {
-      // Una sola vez
-      if (baseDate > now) {
-        events.push({
-          ...baseEvent,
-          id: crypto.randomUUID(),
-        });
-      }
+      // ... lógica default
+      break;
     }
-  }
+  } // <-- Cierre del switch
+
+  return events; // Fuera del switch
+};
 
   return events;
 };
