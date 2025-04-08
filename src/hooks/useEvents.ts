@@ -41,7 +41,6 @@ const generateRecurringEvents = (baseEvent: EventFormData): EventFormData[] => {
 };
 
   return events;
-};
 
 export const useEvents = () => {
   const [events, setEvents] = useState<EventFormData[]>([]);
