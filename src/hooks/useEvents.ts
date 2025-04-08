@@ -103,22 +103,29 @@ export const useEvents = () => {
     date: undefined,
   });
 
-  useEffect(() => {
-    const loadStoredData = () => {
-      const storedEvents = localStorage.getItem(STORAGE_KEY);
-      const storedReminders = localStorage.getItem(REMINDERS_KEY);
-      const storedFavorites = localStorage.getItem(FAVORITES_KEY);
+ // FUNCIÓN ACTUALIZADA PARA CARGAR EVENTOS
+useEffect(() => {
+  const loadEvents = () => {
+    const storedEvents = localStorage.getItem(STORAGE_KEY);
+    if (!storedEvents) return;
+
+    try {
+      const parsedEvents = JSON.parse(storedEvents) as EventFormData[];
       
-      if (storedEvents) {
-        const parsedEvents = JSON.parse(storedEvents);
-        
-        // Apply reminders
-        if (storedReminders) {
-          const reminders = JSON.parse(storedReminders);
-          parsedEvents.forEach((event: EventFormData) => {
-            event.reminder = reminders[event.id];
-          });
-        }
+      // Verificar y mantener IDs únicos
+      const uniqueEvents = parsedEvents.filter((event, index, self) =>
+        index === self.findIndex(e => e.id === event.id)
+      );
+
+      setEvents(uniqueEvents);
+    } catch (error) {
+      console.error('Error loading events:', error);
+      toast.error('Error al cargar eventos');
+    }
+  };
+
+  loadEvents();
+}, []);
 
         // Apply favorites
         if (storedFavorites) {
