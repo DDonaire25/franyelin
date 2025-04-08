@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { EventFormData } from '../types';
-import { Calendar, MapPin, Users, Edit, Trash2, Share2, Download, Copy, Bell, Star } from 'lucide-react';
+import { Calendar, MapPin, Users, Edit, Trash2, Share2, Download, Copy, Bell, Star, FileDown, CalendarPlus } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { FacebookShareButton, TwitterShareButton, WhatsappShareButton } from 'react-share';
 import toast from 'react-hot-toast';
 import { generateShareMessage } from '../utils/shareFormatters';
+import { exportToICS, addToGoogleCalendar } from '../utils/exportUtils';
 
 interface EventCardProps {
   event: EventFormData;
@@ -23,6 +24,7 @@ export const EventCard: React.FC<EventCardProps> = ({
 }) => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [reminderMinutes, setReminderMinutes] = useState(30);
 
   const handleCopyText = async () => {
@@ -143,6 +145,13 @@ export const EventCard: React.FC<EventCardProps> = ({
                 <Share2 size={20} className="transition-transform hover:scale-110" />
               </button>
               <button
+                onClick={() => setIsExportModalOpen(true)}
+                className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                aria-label="Exportar evento"
+              >
+                <FileDown size={20} className="transition-transform hover:scale-110" />
+              </button>
+              <button
                 onClick={() => onDelete(event.id)}
                 className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                 aria-label="Eliminar evento"
@@ -229,6 +238,48 @@ export const EventCard: React.FC<EventCardProps> = ({
 
                 <button
                   onClick={() => setIsShareModalOpen(false)}
+                  className="w-full mt-4 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export Modal */}
+      {isExportModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Exportar Evento</h3>
+              
+              <div className="space-y-4">
+                <button
+                  onClick={() => {
+                    exportToICS(event);
+                    setIsExportModalOpen(false);
+                  }}
+                  className="w-full flex items-center justify-center space-x-2 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <FileDown size={20} />
+                  <span>Descargar archivo .ics</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    addToGoogleCalendar(event);
+                    setIsExportModalOpen(false);
+                  }}
+                  className="w-full flex items-center justify-center space-x-2 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <CalendarPlus size={20} />
+                  <span>Añadir a Google Calendar</span>
+                </button>
+
+                <button
+                  onClick={() => setIsExportModalOpen(false)}
                   className="w-full mt-4 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
                   Cerrar

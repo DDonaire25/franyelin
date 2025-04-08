@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Calendar, Moon, Sun } from 'lucide-react';
 import { EventForm } from './components/EventForm';
 import { EventList } from './components/EventList';
+import { VirtualizedEventList } from './components/VirtualizedEventList';
+import { CalendarView } from './components/CalendarView';
 import { EventDetails } from './components/EventDetails';
 import { Navbar } from './components/Navbar';
 import { ProfileEditor } from './components/ProfileEditor';
@@ -20,6 +22,7 @@ function App() {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   
   const {
     events,
@@ -137,16 +140,40 @@ function App() {
                 <Calendar className="h-8 w-8 text-purple-600" />
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Agenda Cultural</h1>
               </div>
-              <button
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                {isDarkMode ? (
-                  <Sun className="h-6 w-6 text-yellow-500" />
-                ) : (
-                  <Moon className="h-6 w-6 text-gray-600" />
-                )}
-              </button>
+              <div className="flex items-center space-x-4">
+                <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`px-4 py-2 ${
+                      viewMode === 'list'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    Lista
+                  </button>
+                  <button
+                    onClick={() => setViewMode('calendar')}
+                    className={`px-4 py-2 ${
+                      viewMode === 'calendar'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    Calendario
+                  </button>
+                </div>
+                <button
+                  onClick={() => setIsDarkMode(!isDarkMode)}
+                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  {isDarkMode ? (
+                    <Sun className="h-6 w-6 text-yellow-500" />
+                  ) : (
+                    <Moon className="h-6 w-6 text-gray-600" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </header>
@@ -159,15 +186,33 @@ function App() {
                 path="/"
                 element={
                   <>
-                    <EventList
-                      events={events}
-                      onEdit={handleEdit}
-                      onDelete={deleteEvent}
-                      filters={filters}
-                      onFilterChange={setFilters}
-                      onToggleReminder={toggleReminder}
-                      onToggleFavorite={toggleFavorite}
-                    />
+                    {viewMode === 'list' ? (
+                      <>
+                        <EventList
+                          events={events}
+                          onEdit={handleEdit}
+                          onDelete={deleteEvent}
+                          filters={filters}
+                          onFilterChange={setFilters}
+                          onToggleReminder={toggleReminder}
+                          onToggleFavorite={toggleFavorite}
+                        />
+                        <div className="mt-8">
+                          <VirtualizedEventList
+                            events={events}
+                            onEdit={handleEdit}
+                            onDelete={deleteEvent}
+                            onToggleReminder={toggleReminder}
+                            onToggleFavorite={toggleFavorite}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <CalendarView
+                        events={events}
+                        onEventClick={(event) => handleEdit(event)}
+                      />
+                    )}
                     <Footer />
                   </>
                 }
