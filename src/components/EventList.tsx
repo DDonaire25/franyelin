@@ -75,13 +75,16 @@ export const EventList: React.FC<EventListProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        // EventList.tsx
-{events.map((event) => (
-  <EventCard 
-    key={`${event.id}-${event.datetime}`} // Key única compuesta
-    event={event}
-  />
-))}
+        {events.map((event) => (
+          <EventCard
+            key={event.id}
+            event={event}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onToggleReminder={onToggleReminder}
+            onToggleFavorite={onToggleFavorite}
+          />
+        ))}
         {events.length === 0 && (
           <div className="col-span-full text-center py-12 text-gray-500">
             No se encontraron eventos que coincidan con los filtros seleccionados.
