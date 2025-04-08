@@ -72,7 +72,10 @@ const generateRecurringEvents = (baseEvent: EventFormData): EventFormData[] => {
         currentDate.setDate(currentDate.getDate() + 1);
       }
       break;
-    }
+      } // <-- Este es el cierre correcto del switch
+
+  return events; // Línea 75 (ajustada)
+};
 
     default: {
       // Una sola vez
