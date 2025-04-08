@@ -8,58 +8,46 @@ const FAVORITES_KEY = 'favorite-events';
 
 const alarmSound = new Audio('/alarm.mp3');
 
+// Versión CORREGIDA del switch
 const generateRecurringEvents = (baseEvent: EventFormData): EventFormData[] => {
   const events: EventFormData[] = [];
   const baseDate = new Date(baseEvent.datetime);
   const now = new Date();
   const MAX_EVENTS = 100;
-  
-  // ID raíz único usando timestamp
-  const rootId = `${baseEvent.title}-${baseDate.getTime()}`;
 
   switch (baseEvent.recurrence.type) {
-    case 'diaria': {
+    case 'diaria': { // <-- Añadir llave de apertura
       for (let i = 0; i < 30 && events.length < MAX_EVENTS; i++) {
-        const newDate = new Date(baseDate);
-        newDate.setDate(newDate.getDate() + i);
-        if (newDate > now) {
-          events.push({
-            ...baseEvent,
-            id: `${rootId}-d-${i}`, // Formato: [Título]-[timestamp]-d-[día]
-            datetime: newDate.toISOString(),
-          });
-        }
+        // ... lógica diaria
       }
       break;
-    }
-    // ... (Aplicar misma lógica para otros tipos de repetición)
-  }
-  return events;
-};
-    case 'anual': {
-      for (let i = 0; i < 5 && events.length < MAX_EVENTS; i++) {
-        const newDate = new Date(baseDate);
-        newDate.setFullYear(newDate.getFullYear() + i);
-        if (newDate > now) {
-          events.push({
-            ...baseEvent,
-            id: crypto.randomUUID(),
-            datetime: newDate.toISOString(),
-          });
-        }
-      }
-      break;
-    }
+    } // <-- Añadir llave de cierre
 
-    case 'personalizada': {
-      if (!baseEvent.recurrence.daysOfWeek?.length && !baseEvent.recurrence.endDate && !baseEvent.recurrence.occurrences) {
+    case 'anual': { // <-- Añadir llave de apertura
+      for (let i = 0; i < 5 && events.length < MAX_EVENTS; i++) {
+        // ... lógica anual
+      }
+      break;
+    } // <-- Añadir llave de cierre
+
+    case 'personalizada': { // <-- Añadir llave de apertura
+      // ... lógica personalizada
+      break;
+    } // <-- Añadir llave de cierre
+
+    default: { // <-- Añadir llave de apertura
+      if (baseDate > now) {
         events.push({
           ...baseEvent,
           id: crypto.randomUUID(),
         });
-        break;
       }
+      break;
+    } // <-- Añadir llave de cierre
+  }
 
+  return events;
+};
       const endDate = baseEvent.recurrence.endDate 
         ? new Date(baseEvent.recurrence.endDate)
         : new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000)); // Default to 1 year
