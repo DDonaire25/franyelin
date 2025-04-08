@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { EventFormData } from '../types';
+import { EventFormData, RecurrenceType } from '../types';
 import { X } from 'lucide-react';
 
 interface EventFormProps {
@@ -25,17 +25,49 @@ export const EventForm: React.FC<EventFormProps> = ({ onSubmit, onClose, initial
       isFree: true,
       amount: 0,
     },
+    recurrence: {
+      type: 'una vez',
+    },
   });
+
+  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('una vez');
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [endDate, setEndDate] = useState<string>('');
+  const [occurrences, setOccurrences] = useState<number>(1);
 
   useEffect(() => {
     if (initialData) {
       setFormData(initialData);
+      setRecurrenceType(initialData.recurrence.type);
+      setSelectedDays(initialData.recurrence.daysOfWeek || []);
+      setEndDate(initialData.recurrence.endDate || '');
+      setOccurrences(initialData.recurrence.occurrences || 1);
     }
   }, [initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    if (recurrenceType === 'personalizada') {
+      if (!selectedDays.length && !endDate && !occurrences) {
+        alert('Para la repetición personalizada, debes seleccionar al menos días de la semana, una fecha de fin o un número de repeticiones.');
+        return;
+      }
+    }
+
+    const recurrenceData = {
+      type: recurrenceType,
+      ...(recurrenceType === 'personalizada' && {
+        daysOfWeek: selectedDays.length > 0 ? selectedDays : undefined,
+        endDate: endDate || undefined,
+        occurrences: occurrences > 1 ? occurrences : undefined,
+      }),
+    };
+
+    onSubmit({
+      ...formData,
+      recurrence: recurrenceData,
+    });
     onClose();
   };
 
@@ -51,6 +83,14 @@ export const EventForm: React.FC<EventFormProps> = ({ onSubmit, onClose, initial
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleDayToggle = (day: string) => {
+    setSelectedDays(prev => 
+      prev.includes(day)
+        ? prev.filter(d => d !== day)
+        : [...prev, day]
+    );
   };
 
   return (
@@ -151,6 +191,71 @@ export const EventForm: React.FC<EventFormProps> = ({ onSubmit, onClose, initial
                   onChange={e => setFormData(prev => ({ ...prev, datetime: e.target.value }))}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
                 />
+              </div>
+
+              {/* Nueva sección de recurrencia */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Repetición
+                </label>
+                <select
+                  value={recurrenceType}
+                  onChange={e => setRecurrenceType(e.target.value as RecurrenceType)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                >
+                  <option value="una vez">Una sola vez</option>
+                  <option value="diaria">Diaria</option>
+                  <option value="anual">Anual</option>
+                  <option value="personalizada">Personalizada</option>
+                </select>
+
+                {recurrenceType === 'personalizada' && (
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Días de la semana
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map((day) => (
+                          <label key={day} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedDays.includes(day)}
+                              onChange={() => handleDayToggle(day)}
+                              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            />
+                            <span className="text-sm text-gray-700">{day}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Fecha de fin
+                      </label>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Número de repeticiones
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={occurrences}
+                        onChange={(e) => setOccurrences(Number(e.target.value))}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
