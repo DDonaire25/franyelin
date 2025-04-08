@@ -168,19 +168,29 @@ export const useEvents = () => {
     }
   };
 
-  const addEvent = (event: Omit<EventFormData, 'id'>) => {
-    const baseEvent = {
+  // Añadir en el hook useEvents:
+const addEvent = (event: Omit<EventFormData, 'id'>) => {
+  try {
+    const baseEvent: EventFormData = {
       ...event,
       id: crypto.randomUUID(),
       isFavorite: false,
-    } as EventFormData;
+    };
 
+    // Generar eventos recurrentes
     const recurringEvents = generateRecurringEvents(baseEvent);
-    const newEvents = [...events, ...recurringEvents];
-    saveEvents(newEvents);
+    
+    // Combinar con eventos existentes
+    const updatedEvents = [...events, ...recurringEvents];
+    
+    // Guardar inmediatamente
+    saveEvents(updatedEvents);
     toast.success('Evento(s) creado(s) exitosamente');
-  };
-
+  } catch (error) {
+    console.error('Error creating event:', error);
+    toast.error('Error al crear el evento');
+  }
+};
   const updateEvent = (event: EventFormData) => {
     const updatedEvents = events.map(e => e.id === event.id ? event : e);
     saveEvents(updatedEvents);
