@@ -8,39 +8,91 @@ const FAVORITES_KEY = 'favorite-events';
 
 const alarmSound = new Audio('/alarm.mp3');
 
-// Versión CORREGIDA del switch
 const generateRecurringEvents = (baseEvent: EventFormData): EventFormData[] => {
   const events: EventFormData[] = [];
   const baseDate = new Date(baseEvent.datetime);
   const now = new Date();
-  const MAX_EVENTS = 100;
+  const MAX_EVENTS = 100; // Límite para evitar sobrecarga
 
   switch (baseEvent.recurrence.type) {
     case 'diaria': {
-      // ... lógica diaria
+      for (let i = 0; i < 30 && events.length < MAX_EVENTS; i++) {
+        const newDate = new Date(baseDate);
+        newDate.setDate(newDate.getDate() + i);
+        if (newDate > now) {
+          events.push({
+            ...baseEvent,
+            id: crypto.randomUUID(),
+            datetime: newDate.toISOString(),
+          });
+        }
+      }
       break;
     }
 
     case 'anual': {
-      // ... lógica anual
+      for (let i = 0; i < 5 && events.length < MAX_EVENTS; i++) {
+        const newDate = new Date(baseDate);
+        newDate.setFullYear(newDate.getFullYear() + i);
+        if (newDate > now) {
+          events.push({
+            ...baseEvent,
+            id: crypto.randomUUID(),
+            datetime: newDate.toISOString(),
+          });
+        }
+      }
       break;
     }
 
     case 'personalizada': {
-      // ... lógica personalizada
+      if (!baseEvent.recurrence.daysOfWeek?.length && !baseEvent.recurrence.endDate && !baseEvent.recurrence.occurrences) {
+        events.push({
+          ...baseEvent,
+          id: crypto.randomUUID(),
+        });
+        break;
+      }
+
+      const endDate = baseEvent.recurrence.endDate 
+        ? new Date(baseEvent.recurrence.endDate)
+        : new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000)); // Default to 1 year
+
+      const maxOccurrences = baseEvent.recurrence.occurrences || MAX_EVENTS;
+      const daysOfWeek = baseEvent.recurrence.daysOfWeek || [];
+      
+      let currentDate = new Date(baseDate);
+      
+      while (events.length < maxOccurrences && currentDate <= endDate && events.length < MAX_EVENTS) {
+        const dayName = currentDate.toLocaleDateString('es-ES', { weekday: 'long' });
+        const capitalizedDayName = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+
+        if (daysOfWeek.includes(capitalizedDayName) && currentDate > now) {
+          events.push({
+            ...baseEvent,
+            id: crypto.randomUUID(),
+            datetime: currentDate.toISOString(),
+          });
+        }
+
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
       break;
     }
 
     default: {
-      // ... lógica default
-      break;
+      // Una sola vez
+      if (baseDate > now) {
+        events.push({
+          ...baseEvent,
+          id: crypto.randomUUID(),
+        });
+      }
     }
-  } // <-- Cierre del switch
-
-  return events; // Fuera del switch
-};
+  }
 
   return events;
+};
 
 export const useEvents = () => {
   const [events, setEvents] = useState<EventFormData[]>([]);
@@ -52,22 +104,44 @@ export const useEvents = () => {
   });
 
   useEffect(() => {
-  const loadStoredData = () => {
-    const storedEvents = localStorage.getItem(STORAGE_KEY);
-    if (!storedEvents) return;
+    const loadStoredData = () => {
+      const storedEvents = localStorage.getItem(STORAGE_KEY);
+      const storedReminders = localStorage.getItem(REMINDERS_KEY);
+      const storedFavorites = localStorage.getItem(FAVORITES_KEY);
+      
+      if (storedEvents) {
+        const parsedEvents = JSON.parse(storedEvents);
+        
+        // Apply reminders
+        if (storedReminders) {
+          const reminders = JSON.parse(storedReminders);
+          parsedEvents.forEach((event: EventFormData) => {
+            event.reminder = reminders[event.id];
+          });
+        }
 
-    const parsedEvents = JSON.parse(storedEvents) as EventFormData[];
-    
-    // Eliminar duplicados usando Set
-    const uniqueEvents = Array.from(
-      new Map(parsedEvents.map(event => [event.id, event])).values()
-    );
+        // Apply favorites
+        if (storedFavorites) {
+          const favorites = JSON.parse(storedFavorites);
+          parsedEvents.forEach((event: EventFormData) => {
+            event.isFavorite = favorites.includes(event.id);
+          });
+        }
 
-    setEvents(uniqueEvents);
-  };
+        // Filter out past events and sort
+        const now = new Date();
+        const validEvents = parsedEvents
+          .filter((event: EventFormData) => new Date(event.datetime) > now)
+          .sort((a: EventFormData, b: EventFormData) => 
+            new Date(a.datetime).getTime() - new Date(b.datetime).getTime()
+          );
 
-  loadStoredData();
-}, []);
+        setEvents(validEvents);
+      }
+    };
+
+    loadStoredData();
+  }, []);
 
   useEffect(() => {
     const checkReminders = () => {
@@ -110,20 +184,13 @@ export const useEvents = () => {
   }, [events]);
 
   const saveEvents = (newEvents: EventFormData[]) => {
-  // Combinar y eliminar duplicados
-  const combinedEvents = [...events, ...newEvents];
-  const uniqueEvents = Array.from(
-    new Map(combinedEvents.map(event => [event.id, event])).values()
-  );
+    // Filter out past events and sort by date
+    const now = new Date();
+    const validEvents = newEvents
+      .filter(event => new Date(event.datetime) > now)
+      .sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
 
-  // Filtrar y ordenar
-  const validEvents = uniqueEvents
-    .filter(event => new Date(event.datetime) > new Date())
-    .sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(validEvents));
-  setEvents(validEvents);
-};
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(validEvents));
     
     const reminders = validEvents.reduce((acc, event) => {
       if (event.reminder) {
