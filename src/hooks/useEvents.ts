@@ -183,25 +183,14 @@ export const useEvents = () => {
     return () => clearInterval(interval);
   }, [events]);
 
- // Corregir la función saveEvents
-const saveEvents = (newEvents: EventFormData[]) => {
-  try {
-    // 1. Filtrar eventos futuros y eliminar duplicados
+  const saveEvents = (newEvents: EventFormData[]) => {
+    // Filter out past events and sort by date
+    const now = new Date();
     const validEvents = newEvents
-      .filter(event => new Date(event.datetime) > new Date())
-      .filter((event, index, self) => 
-        self.findIndex(e => e.id === event.id) === index
-      );
+      .filter(event => new Date(event.datetime) > now)
+      .sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
 
-    // 2. Guardar en localStorage
     localStorage.setItem(STORAGE_KEY, JSON.stringify(validEvents));
-    setEvents(validEvents);
-    
-  } catch (error) {
-    console.error('Error al guardar:', error);
-    toast.error('Error crítico al guardar eventos');
-  }
-};
     
     const reminders = validEvents.reduce((acc, event) => {
       if (event.reminder) {

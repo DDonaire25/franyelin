@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { EventFormData } from '../types';
 import { Calendar, MapPin, Users, Edit, Trash2, Share2, Download, Copy, Bell, Star, FileDown, CalendarPlus } from 'lucide-react';
 import { toPng } from 'html-to-image';
@@ -6,6 +6,8 @@ import { FacebookShareButton, TwitterShareButton, WhatsappShareButton } from 're
 import toast from 'react-hot-toast';
 import { generateShareMessage } from '../utils/shareFormatters';
 import { exportToICS, addToGoogleCalendar } from '../utils/exportUtils';
+import { useFloating, offset, shift, flip, arrow } from '@floating-ui/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface EventCardProps {
   event: EventFormData;
@@ -26,6 +28,12 @@ export const EventCard: React.FC<EventCardProps> = ({
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [reminderMinutes, setReminderMinutes] = useState(30);
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  const { refs, floatingStyles } = useFloating({
+    placement: 'top',
+    middleware: [offset(10), flip(), shift()],
+  });
 
   const handleCopyText = async () => {
     try {
@@ -87,7 +95,13 @@ export const EventCard: React.FC<EventCardProps> = ({
 
   return (
     <>
-      <div id={`event-card-${event.id}`} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      <div 
+        id={`event-card-${event.id}`} 
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+        ref={refs.setReference}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+      >
         {event.image && (
           <img src={event.image} alt={event.title} className="w-full h-48 object-cover" />
         )}
@@ -184,6 +198,46 @@ export const EventCard: React.FC<EventCardProps> = ({
             </span>
           </div>
         </div>
+
+        <AnimatePresence>
+          {showTooltip && (
+            <motion.div
+              ref={refs.setFloating}
+              style={floatingStyles}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg z-50 max-w-sm"
+            >
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Detalles Adicionales</h4>
+              {event.responsibleName && (
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  👤 Responsable: {event.responsibleName}
+                </p>
+              )}
+              {event.phone && (
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  📞 Contacto: {event.phone}
+                </p>
+              )}
+              {event.socialMedia && (
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  📱 Social: @{event.socialMedia}
+                </p>
+              )}
+              {event.mapLink && (
+                <a
+                  href={event.mapLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+                >
+                  🗺️ Ver en Google Maps
+                </a>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Share Modal */}

@@ -11,7 +11,7 @@ export const Footer: React.FC = () => {
           </div>
           <div className="flex space-x-4">
             <a
-              href="https://instagram.com"
+              href="https://instagram.com/douglasdonaire"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
@@ -19,7 +19,7 @@ export const Footer: React.FC = () => {
               <Instagram className="h-6 w-6" />
             </a>
             <a
-              href="https://wa.me/1234567890"
+              href="https://wa.me/584244093330?text=Hola, te contacto desde agenda cultural.."
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
