@@ -45,7 +45,7 @@ export const EventForm: React.FC<EventFormProps> = ({ onSubmit, onClose, initial
     }
   }, [initialData]);
 
- // En el método handleSubmit:
+   // En el método handleSubmit:
 const handleSubmit = (e: React.FormEvent) => {
   e.preventDefault();
 
