@@ -45,15 +45,18 @@ export const EventForm: React.FC<EventFormProps> = ({ onSubmit, onClose, initial
     }
   }, [initialData]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+ // En el método handleSubmit:
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (recurrenceType === 'personalizada') {
-      if (!selectedDays.length && !endDate && !occurrences) {
-        alert('Para la repetición personalizada, debes seleccionar al menos días de la semana, una fecha de fin o un número de repeticiones.');
-        return;
-      }
-    }
+  // Validación de fecha/hora
+  if (!formData.datetime) {
+    alert('¡La fecha y hora son obligatorias!');
+    return;
+  }
+
+  // Resto del código...
+};
 
     const recurrenceData = {
       type: recurrenceType,
