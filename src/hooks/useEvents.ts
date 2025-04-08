@@ -190,13 +190,23 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [events]);
 
-  const saveEvents = (newEvents: EventFormData[]) => {
-    // Filter out past events and sort by date
-    const now = new Date();
-    const validEvents = newEvents
-      .filter(event => new Date(event.datetime) > now)
-      .sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
+  // FUNCIÓN DE GUARDADO MEJORADA
+const saveEvents = (newEvents: EventFormData[]) => {
+  const uniqueEvents = newEvents.reduce((acc: EventFormData[], current) => {
+    if (!acc.some(event => event.id === current.id)) {
+      acc.push(current);
+    }
+    return acc;
+  }, []);
 
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(uniqueEvents));
+    setEvents(uniqueEvents);
+  } catch (error) {
+    console.error('Error saving events:', error);
+    toast.error('Error al guardar eventos');
+  }
+};
     localStorage.setItem(STORAGE_KEY, JSON.stringify(validEvents));
     
     const reminders = validEvents.reduce((acc, event) => {
