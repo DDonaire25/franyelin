@@ -1,4 +1,4 @@
-export type RecurrenceType = "una vez" | "diaria" | "anual" | "personalizada";
+export type RecurrenceType = 'una vez' | 'diaria' | 'anual' | 'personalizada';
 
 export interface Recurrence {
   type: RecurrenceType;
@@ -30,6 +30,7 @@ export interface EventFormData {
     minutesBefore: number;
     triggered?: boolean;
   };
+  isFavorite?: boolean;
   recurrence: Recurrence;
 }
 
@@ -47,4 +48,4 @@ export interface UserProfile {
   theme?: 'light' | 'dark';
 }
 
-export type ActiveSection = 'search' | 'create' | 'profile' | null;
+export type ActiveSection = 'search' | 'create' | 'profile' | 'favorites' | null;
