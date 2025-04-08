@@ -91,6 +91,12 @@ export const EventList: React.FC<EventListProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </div>// EventList.tsx
+{events.map((event) => (
+  <EventCard 
+    key={`${event.id}-${event.datetime}`} // Key única compuesta
+    event={event}
+  />
+))}
   );
 };
