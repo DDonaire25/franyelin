@@ -103,29 +103,22 @@ export const useEvents = () => {
     date: undefined,
   });
 
- // FUNCIÓN ACTUALIZADA PARA CARGAR EVENTOS
-useEffect(() => {
-  const loadEvents = () => {
-    const storedEvents = localStorage.getItem(STORAGE_KEY);
-    if (!storedEvents) return;
-
-    try {
-      const parsedEvents = JSON.parse(storedEvents) as EventFormData[];
+  useEffect(() => {
+    const loadStoredData = () => {
+      const storedEvents = localStorage.getItem(STORAGE_KEY);
+      const storedReminders = localStorage.getItem(REMINDERS_KEY);
+      const storedFavorites = localStorage.getItem(FAVORITES_KEY);
       
-      // Verificar y mantener IDs únicos
-      const uniqueEvents = parsedEvents.filter((event, index, self) =>
-        index === self.findIndex(e => e.id === event.id)
-      );
-
-      setEvents(uniqueEvents);
-    } catch (error) {
-      console.error('Error loading events:', error);
-      toast.error('Error al cargar eventos');
-    }
-  };
-
-  loadEvents();
-}, []);
+      if (storedEvents) {
+        const parsedEvents = JSON.parse(storedEvents);
+        
+        // Apply reminders
+        if (storedReminders) {
+          const reminders = JSON.parse(storedReminders);
+          parsedEvents.forEach((event: EventFormData) => {
+            event.reminder = reminders[event.id];
+          });
+        }
 
         // Apply favorites
         if (storedFavorites) {
@@ -190,23 +183,13 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [events]);
 
-  // FUNCIÓN DE GUARDADO MEJORADA
-const saveEvents = (newEvents: EventFormData[]) => {
-  const uniqueEvents = newEvents.reduce((acc: EventFormData[], current) => {
-    if (!acc.some(event => event.id === current.id)) {
-      acc.push(current);
-    }
-    return acc;
-  }, []);
+  const saveEvents = (newEvents: EventFormData[]) => {
+    // Filter out past events and sort by date
+    const now = new Date();
+    const validEvents = newEvents
+      .filter(event => new Date(event.datetime) > now)
+      .sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
 
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(uniqueEvents));
-    setEvents(uniqueEvents);
-  } catch (error) {
-    console.error('Error saving events:', error);
-    toast.error('Error al guardar eventos');
-  }
-};
     localStorage.setItem(STORAGE_KEY, JSON.stringify(validEvents));
     
     const reminders = validEvents.reduce((acc, event) => {
