@@ -187,26 +187,15 @@ function App() {
                 element={
                   <>
                     {viewMode === 'list' ? (
-                      <>
-                        <EventList
-                          events={events}
-                          onEdit={handleEdit}
-                          onDelete={deleteEvent}
-                          filters={filters}
-                          onFilterChange={setFilters}
-                          onToggleReminder={toggleReminder}
-                          onToggleFavorite={toggleFavorite}
-                        />
-                        <div className="mt-8">
-                          <VirtualizedEventList
-                            events={events}
-                            onEdit={handleEdit}
-                            onDelete={deleteEvent}
-                            onToggleReminder={toggleReminder}
-                            onToggleFavorite={toggleFavorite}
-                          />
-                        </div>
-                      </>
+                      <EventList
+                        events={events}
+                        onEdit={handleEdit}
+                        onDelete={deleteEvent}
+                        filters={filters}
+                        onFilterChange={setFilters}
+                        onToggleReminder={toggleReminder}
+                        onToggleFavorite={toggleFavorite}
+                      />
                     ) : (
                       <CalendarView
                         events={events}
